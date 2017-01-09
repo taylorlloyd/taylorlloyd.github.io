@@ -6,11 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Employment</title>
+  <title>Presentations</title>
   <meta name="description" content="My name is Taylor Lloyd, and I love fiddling with development tools and optimizing day-to-day work. I'm currently working on a Masters Thesis at the University of Alberta, looking into compiler optimizations for GPU computing. In my free time (hah!) I dabble in Android and Home Automation.
 ">
 
-  <link rel="canonical" href="http://taylorlloyd.ca/employment">
+  <link rel="canonical" href="http://taylorlloyd.ca/presentations">
   <link rel="alternate" type="application/rss+xml" title="Plugging it in Wrong" href="http://taylorlloyd.ca/feed.xml" />
 
   <!-- Material Design Lite css Library -->
@@ -42,12 +42,20 @@
 
     <div class="mdl-layout__header-row">
       <!-- Title -->
-      <a class="hidden-link" href="/"><span class="mdl-layout-title">Plugging it in Wrong</span></a>
+      <span class="mdl-layout-title">Plugging it in Wrong</span>
       <!-- Add spacer, to align navigation to the right -->
       <div class="mdl-layout-spacer"></div>
 
-      
 
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable is-upgraded">
+        <label class="mdl-button mdl-js-button mdl-button--icon" for="js-search__input">
+          <i class="material-icons">search</i>
+        </label>
+
+        <div class="mdl-textfield__expandable-holder" >
+          <input class="mdl-textfield__input super-search__input" type="text" id="js-search__input" />
+        </div>
+      </div>
 
     </div>
   </header>
@@ -89,21 +97,19 @@
       <div class="mdl-color-text--grey-500">
       
       </div>
-      <h3>Employment</h3>
+      <h3>Presentations</h3>
       <article class="post-content">
-        <p><p>Hi, I’m not currently looking for full-time employment, as I would like to finish my graduate degree. However, I expect to graduate in January 2018 and would love to hear about opportunities for then! I’m open to relocation, and actually hope to return to the US after school.</p>
+        <p><h4 id="gpgpu-offloading-performance-in-xl-with-openmp-45">GPGPU Offloading Performance in XL with OpenMP 4.5</h4>
+<p><a href="http://people.engr.ncsu.edu/xshen5/cdp2016">CASCON Compiler Driven Performance (CDP) 2016</a></p>
 
-<p><img src="/img/employment/ualberta.png" alt="University of Alberta" /></p>
+<p>OpenMP 4.5 allows the offloading of computation to Graphics Processing Units (GPUs) in programs written in C, C++, and Fortran without requiring a detailed understanding of General-Purpose Computing in GPUs (GPGPUs), but at what cost?
+This talk contrasts OpenMP 4.5 to competing programming models: OpenACC, OpenCL, and CUDA.
+All these programming models allow for the execution of code on GPGPUs but differ in philosophy, with implications for performance, ease of use, and ease of implementation.
+This presentation illustrates these differences through a toy example and describes the implementation of OpenMP 4.5 in the XL Compiler. The talk then discusses the NVidia CUDA GPGPU programming model, exploring challenges in mapping OpenMP 4.5 constructs to GPGPUs.In particular, it discusses issues that arise with the sharing of variables between threads and with the implementation of nested parallelism.
+The talk examines the strengths and weaknesses of alternative GPGPU code generation schemes, compares the
+performance of OpenMP 4.5 in XL with CUDA implementations of the same programs, and identifies sources of overhead.</p>
 
-<p>I’m currently completing a Master’s Thesis at the University of Alberta, in Edmonton, Alberta, Canada. I’m supervised by <a href="https://webdocs.cs.ualberta.ca/~amaral/">Dr J Nelson Amaral</a>, with a focus on compiler strategies and transformations for GPU computing. My work is currently supported by IBM Canada as a CAS Student Fellow. I expect to complete my Master’s Thesis around January 2018. If you’re also interested in GPU computing or compilers for GPU computing, please contact me!</p>
-
-<p>Previously, I’ve held a 12-month internship with IBM’s Hardware Acceleration Lab / Cloud Innovation Lab. I was part of a 5 person team developing a novel functional programming language for GPU-accelerated financial analysis, and contributed to both the specification for and implementation of the language. Now named Newton, development on the language has ceased, but information about it was available in <a href="https://www.cs.rochester.edu/drupal/cdp-2014-program">CASCon 2014</a> under the name IBM Dash.</p>
-
-<p><img src="/img/employment/ibm.png" alt="IBM" /></p>
-
-<p>I’ve also held two internships with Amazon.com, for 6 and 3 months respectively. In that time, I worked with a small team to modify Kindle Fire android tablets for use within Amazon’s shipping centers. We developed a custom android OS with support for Amazon’s corporate infrastructure, as well as many applications to support operations within the shipping facilities.</p>
-
-<p><img src="/img/employment/amazon.jpg" alt="Amazon" /></p>
+<p><a href="https://docs.google.com/a/taylorlloyd.ca/presentation/d/1XEHFULrVUc9mPZF8LjAt8I5OYdM6dbvPSgoIxh8sXpc/edit?usp=sharing">Slides</a></p>
 </p>
       </article>
       

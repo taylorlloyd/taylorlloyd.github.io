@@ -6,11 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Employment</title>
+  <title>Plugging it in Wrong</title>
   <meta name="description" content="My name is Taylor Lloyd, and I love fiddling with development tools and optimizing day-to-day work. I'm currently working on a Masters Thesis at the University of Alberta, looking into compiler optimizations for GPU computing. In my free time (hah!) I dabble in Android and Home Automation.
 ">
 
-  <link rel="canonical" href="http://taylorlloyd.ca/employment">
+  <link rel="canonical" href="http://taylorlloyd.ca/">
   <link rel="alternate" type="application/rss+xml" title="Plugging it in Wrong" href="http://taylorlloyd.ca/feed.xml" />
 
   <!-- Material Design Lite css Library -->
@@ -42,12 +42,20 @@
 
     <div class="mdl-layout__header-row">
       <!-- Title -->
-      <a class="hidden-link" href="/"><span class="mdl-layout-title">Plugging it in Wrong</span></a>
+      <span class="mdl-layout-title">Plugging it in Wrong</span>
       <!-- Add spacer, to align navigation to the right -->
       <div class="mdl-layout-spacer"></div>
 
-      
 
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable is-upgraded">
+        <label class="mdl-button mdl-js-button mdl-button--icon" for="js-search__input">
+          <i class="material-icons">search</i>
+        </label>
+
+        <div class="mdl-textfield__expandable-holder" >
+          <input class="mdl-textfield__input super-search__input" type="text" id="js-search__input" />
+        </div>
+      </div>
 
     </div>
   </header>
@@ -81,54 +89,74 @@
 
     
 
-    <div class="post-ribbon"></div>
-<main class="post-main mdl-layout__content">
-  <div class="post-container mdl-grid">
-    <div class="mdl-cell mdl-cell--2-col mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
-    <div class="post-section mdl-color--white mdl-shadow--4dp content mdl-color-text--grey-800 mdl-cell mdl-cell--8-col">
-      <div class="mdl-color-text--grey-500">
-      
+    <div class="page-content">
+  <div class="mdl-grid">
+  
+
+    
+    
+
+    <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--4-col mdl-cell--4-col-desktop mdl-cell--4-col-tablet mdl-cell--12-col-phone">
+      <div class="mdl-card__title"  style="background: url('http://images.nvidia.com/content/tesla/images/pascal-streaming-multiprocessor.png') center/cover;" >
+        <h2 class="mdl-card__title-text">Understanding the Pascal GPU Instruction Pipeline</h2>
       </div>
-      <h3>Employment</h3>
-      <article class="post-content">
-        <p><p>Hi, I’m not currently looking for full-time employment, as I would like to finish my graduate degree. However, I expect to graduate in January 2018 and would love to hear about opportunities for then! I’m open to relocation, and actually hope to return to the US after school.</p>
+      <div class="mdl-card__supporting-text">
+        <span>Jan 7, 2017</span>
+        <p><p>There is lots of literature on instruction pipelines in CPUs, but GPUs remain poorly understood.
+GPUs execute instructions in a wildly different manner, and many common compiler transformations that are effective for CPUs – such as strength reduction, or partial dead code elimination – can actually hurt GPU performance. Through the lens of NVidia’s latest series of GPUs, let’s take a look at how instructions are actually executed and how that affects us as programmers and compiler developers.</p>
 
-<p><img src="/img/employment/ualberta.png" alt="University of Alberta" /></p>
-
-<p>I’m currently completing a Master’s Thesis at the University of Alberta, in Edmonton, Alberta, Canada. I’m supervised by <a href="https://webdocs.cs.ualberta.ca/~amaral/">Dr J Nelson Amaral</a>, with a focus on compiler strategies and transformations for GPU computing. My work is currently supported by IBM Canada as a CAS Student Fellow. I expect to complete my Master’s Thesis around January 2018. If you’re also interested in GPU computing or compilers for GPU computing, please contact me!</p>
-
-<p>Previously, I’ve held a 12-month internship with IBM’s Hardware Acceleration Lab / Cloud Innovation Lab. I was part of a 5 person team developing a novel functional programming language for GPU-accelerated financial analysis, and contributed to both the specification for and implementation of the language. Now named Newton, development on the language has ceased, but information about it was available in <a href="https://www.cs.rochester.edu/drupal/cdp-2014-program">CASCon 2014</a> under the name IBM Dash.</p>
-
-<p><img src="/img/employment/ibm.png" alt="IBM" /></p>
-
-<p>I’ve also held two internships with Amazon.com, for 6 and 3 months respectively. In that time, I worked with a small team to modify Kindle Fire android tablets for use within Amazon’s shipping centers. We developed a custom android OS with support for Amazon’s corporate infrastructure, as well as many applications to support operations within the shipping facilities.</p>
-
-<p><img src="/img/employment/amazon.jpg" alt="Amazon" /></p>
 </p>
-      </article>
-      
-      <div>
-        <h3>Comments</h3>
-          <section class="disqus">
-    <div id="disqus_thread"></div>
-    <script type="text/javascript">
-        var disqus_shortname = 'taylorlloyd';
-        var disqus_developer = 0; // developer mode is on
-        (function() {
-            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-        })();
-    </script>
-    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
-</section>
-
       </div>
-      
+      <div class="mdl-card__actions mdl-card--border">
+        <a class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" href="/gpu,/pascal,/cuda/2017/01/07/gpu-pipelines.html">Read More</a>
+      </div>
+      <div class="mdl-card__menu">
+        <button class="mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect" id="post-/gpu,/pascal,/cuda/2017/01/07/gpu-pipelines">
+          <i class="material-icons">share</i>
+        </button>
+        <ul class="mdl-menu mdl-js-menu mdl-menu--bottom-right" for="post-/gpu,/pascal,/cuda/2017/01/07/gpu-pipelines">
+          <li><a href="https://www.facebook.com/dialog/share?app_id=&display=page&href=/gpu,/pascal,/cuda/2017/01/07/gpu-pipelines.html&redirect_uri=" class="mdl-menu__item">Facebook</a></li>
+          <li><a href="https://twitter.com/share?url=/gpu,/pascal,/cuda/2017/01/07/gpu-pipelines.html&text=Understanding the Pascal GPU Instruction Pipeline&via=thetaylorlloyd" class="mdl-menu__item">Twitter</a></li>
+          <li><a href="https://plus.google.com/share?url=/gpu,/pascal,/cuda/2017/01/07/gpu-pipelines.html" class="mdl-menu__item">Google+</a></li>
+        </ul>
+      </div>
     </div>
+    
+    
+    
+
+    <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--4-col mdl-cell--4-col-desktop mdl-cell--4-col-tablet mdl-cell--12-col-phone">
+      <div class="mdl-card__title"  style="background: url('/img/ir-home.jpg') center/cover;" >
+        <h2 class="mdl-card__title-text">Connecting a Dumb TV to Google Home</h2>
+      </div>
+      <div class="mdl-card__supporting-text">
+        <span>Dec 30, 2016</span>
+        <p><p>For Christmas, I received a Google Home and some Philips Hue lightbulbs. Within 15 minutes, I had every light in my apartment responding to voice controls!
+Naturally rather than accepting that life is awesome and that I live in the future, I was immediately annoyed that I still had to use a remote to change inputs on my TV.
+Here’s how I went about fixing that.</p>
+
+</p>
+      </div>
+      <div class="mdl-card__actions mdl-card--border">
+        <a class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" href="/google/home/automation/ifttt/aws/iot/2016/12/30/ir-blaster.html">Read More</a>
+      </div>
+      <div class="mdl-card__menu">
+        <button class="mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect" id="post-/google/home/automation/ifttt/aws/iot/2016/12/30/ir-blaster">
+          <i class="material-icons">share</i>
+        </button>
+        <ul class="mdl-menu mdl-js-menu mdl-menu--bottom-right" for="post-/google/home/automation/ifttt/aws/iot/2016/12/30/ir-blaster">
+          <li><a href="https://www.facebook.com/dialog/share?app_id=&display=page&href=/google/home/automation/ifttt/aws/iot/2016/12/30/ir-blaster.html&redirect_uri=" class="mdl-menu__item">Facebook</a></li>
+          <li><a href="https://twitter.com/share?url=/google/home/automation/ifttt/aws/iot/2016/12/30/ir-blaster.html&text=Connecting a Dumb TV to Google Home&via=thetaylorlloyd" class="mdl-menu__item">Twitter</a></li>
+          <li><a href="https://plus.google.com/share?url=/google/home/automation/ifttt/aws/iot/2016/12/30/ir-blaster.html" class="mdl-menu__item">Google+</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    
+
+  
   </div>
-</main>
+</div>
 
     <footer class="mdl-mega-footer">
   <div class="mdl-mega-footer--middle-section">

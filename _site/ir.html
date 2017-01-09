@@ -1,0 +1,150 @@
+<hr />
+<p>layout: post
+title:  “Connecting a Dumb TV to Google Home”
+date:   2016-12-30 10:23:00
+categories: google home automation ifttt aws iot
+author: Taylor Lloyd
+image: /img/ir-home.jpg
+—
+For Christmas, I received a Google Home and some Philips Hue lightbulbs. Within 15 minutes, I had every light in my apartment responding to voice controls!
+Naturally rather than accepting that life is awesome and that I live in the future, I was immediately annoyed that I still had to use a remote to change inputs on my TV.
+Here’s how I went about fixing that.</p>
+
+<p><img src="/img/ir-home.jpg" alt="Google Home" /></p>
+
+<p>The Google Home is an interface to the Google Assistant, which currently only supports a integration through <a href="https://developers.google.com/actions/">Actions on Google</a>. Currently the only way to integrate as a random developer is to implement a Conversation Action, which means controlling my TV would sound a little bit like this:</p>
+
+<p>“Ok Google, I’d like to talk to my TV” - Me</p>
+
+<p>Home - “Here’s your TV!”</p>
+
+<p>“Let’s play Wii” - Me</p>
+
+<p>Home - “Setting your TV to Wii”</p>
+
+<p>“Exit” - Me</p>
+
+<p>Yikes, that’s not going to fly. Fortunately, Google has allowed IFTTT to implement Direct Actions, which let a developer specify special phrases to trigger an IFTTT recipe.
+Even more fortunately, IFTTT <em>finally</em> implemented a Maker channel, which allows arbitrary web requests. With that part sorted, let’s look at how we can control the TV.</p>
+
+<p>I ordered a USB IR blaster from <a href="http://www.iguanaworks.net">IguanaWorks</a>, and jumped at the chance to use one of my fancy new Raspberry Pi 3s. I loaded up a fresh copy of Raspbian, installed LIRC from the repository, copied in an LG remote profile from this <a href="http://lirc-remotes.sourceforge.net/remotes-table.html">list</a>, and tried my first command:</p>
+
+<p><code>$ irsend send_once lg KEY_POWER</code></p>
+
+<p><code>irsend: hardware does not support sending</code></p>
+
+<p>Hmm. It turns out there’s quite a process left here, as detailed in the IguanaWorks <a href="http://www.iguanaworks.net/wiki/doku.php?id=usbir:gettingstarted">Getting Started</a> page. I had to build LIRC from source including the iguanaIR driver, and configure my hardware.conf. However with that finished, and the end of my IR blaster artfully taped over my TV’s IR sensor, I could toggle the TV power!</p>
+
+<p>So let’s take stock here: We have a raspberry pi that can trigger IR commands on my TV, and the ability to call a website with a voice command. Clearly we’re missing some glue here.At this point there are many ways to solve the problem, the easiest of which is to open a hole in my router, and let IFTTT call my raspberry pi directly. Since I’m a glutton for punishment though, and have been interested in AWS for a while, lets try to solve this problem with AWS IoT.</p>
+
+<p>The plan is simple. I’ll set up an AWS IoT device to represent my TV, and have my raspberry pi subscribe to the device state, and update the actual TV whenever the state changes on AWS. Then I can have Amazon API Gateway trigger a lambda function to trigger updates to the AWS IoT device.</p>
+
+<h4 id="aws-iot">AWS IoT</h4>
+
+<p>Configuring devices in AWS IoT is actually deceptively simple for home use. Amazon pre-defines tons of <em>types</em> with pre-defined attributes, but for my purposes, I really just want to track the current input and the current power state, so I created my own <em>Thing</em> without a type. I created two attributes for input and power.</p>
+
+<p><img src="/img/ir-home/aws-iot-attributes.png" alt="IoT configuration" /></p>
+
+<p>Once the <em>Thing</em> (I called mine TV) is created, it will be visible on the AWS IoT dashboard.</p>
+
+<p><img src="/img/ir-home/aws-iot.png" alt="IoT dashboard" /></p>
+
+<p>AWS IoT manages the online state of objects through what it calls <em>Shadows</em>. The shadow represents the most recent online state, which the device will update itself to reflect at the next online check-in.
+In order to update an IoT shadow from a lambda function, you must grant the lambda function a special IAM permission. I used the following inline IAM code to allow my lambda function to publish to my Amazon IoT devices:</p>
+
+<pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:Publish"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}
+</code></pre>
+
+<div class="language-python highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"> <a href="#n1" name="n1">1</a></span>  <span style="color:#080;font-weight:bold">from</span> <span style="color:#B44;font-weight:bold">__future__</span> <span style="color:#080;font-weight:bold">import</span> <span style="color:#B44;font-weight:bold">print_function</span>
+<span class="line-numbers"> <a href="#n2" name="n2">2</a></span>
+<span class="line-numbers"> <a href="#n3" name="n3">3</a></span>  <span style="color:#080;font-weight:bold">import</span> <span style="color:#B44;font-weight:bold">boto3</span>
+<span class="line-numbers"> <a href="#n4" name="n4">4</a></span>  <span style="color:#080;font-weight:bold">import</span> <span style="color:#B44;font-weight:bold">json</span>
+<span class="line-numbers"> <a href="#n5" name="n5">5</a></span>
+<span class="line-numbers"> <a href="#n6" name="n6">6</a></span>  print(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">Loading function</span><span style="color:#710">'</span></span>)
+<span class="line-numbers"> <a href="#n7" name="n7">7</a></span>
+<span class="line-numbers"> <a href="#n8" name="n8">8</a></span>
+<span class="line-numbers"> <a href="#n9" name="n9">9</a></span>  <span style="color:#080;font-weight:bold">def</span> <span style="color:#06B;font-weight:bold">respond</span>(err, res=<span style="color:#069">None</span>):
+<span class="line-numbers"><strong><a href="#n10" name="n10">10</a></strong></span>      <span style="color:#080;font-weight:bold">return</span> {
+<span class="line-numbers"><a href="#n11" name="n11">11</a></span>          <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">statusCode</span><span style="color:#710">'</span></span>: <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">400</span><span style="color:#710">'</span></span> <span style="color:#080;font-weight:bold">if</span> err <span style="color:#080;font-weight:bold">else</span> <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">200</span><span style="color:#710">'</span></span>,
+<span class="line-numbers"><a href="#n12" name="n12">12</a></span>          <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">body</span><span style="color:#710">'</span></span>: err.message <span style="color:#080;font-weight:bold">if</span> err <span style="color:#080;font-weight:bold">else</span> json.dumps(res),
+<span class="line-numbers"><a href="#n13" name="n13">13</a></span>          <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">headers</span><span style="color:#710">'</span></span>: {
+<span class="line-numbers"><a href="#n14" name="n14">14</a></span>              <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">Content-Type</span><span style="color:#710">'</span></span>: <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">application/json</span><span style="color:#710">'</span></span>,
+<span class="line-numbers"><a href="#n15" name="n15">15</a></span>          },
+<span class="line-numbers"><a href="#n16" name="n16">16</a></span>      }
+<span class="line-numbers"><a href="#n17" name="n17">17</a></span>
+<span class="line-numbers"><a href="#n18" name="n18">18</a></span>  <span style="color:#080;font-weight:bold">def</span> <span style="color:#06B;font-weight:bold">inputMap</span>(name):
+<span class="line-numbers"><a href="#n19" name="n19">19</a></span>      m = {
+<span class="line-numbers"><strong><a href="#n20" name="n20">20</a></strong></span>        <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">xbox</span><span style="color:#710">&quot;</span></span>: <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">HDMI1</span><span style="color:#710">&quot;</span></span>,
+<span class="line-numbers"><a href="#n21" name="n21">21</a></span>        <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">chromecast</span><span style="color:#710">&quot;</span></span>: <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">HDMI2</span><span style="color:#710">&quot;</span></span>,
+<span class="line-numbers"><a href="#n22" name="n22">22</a></span>        <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">netflix</span><span style="color:#710">&quot;</span></span>: <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">HDMI2</span><span style="color:#710">&quot;</span></span>,
+<span class="line-numbers"><a href="#n23" name="n23">23</a></span>        <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">youtube</span><span style="color:#710">&quot;</span></span>: <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">HDMI2</span><span style="color:#710">&quot;</span></span>,
+<span class="line-numbers"><a href="#n24" name="n24">24</a></span>        <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">wii</span><span style="color:#710">&quot;</span></span>: <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">HDMI3</span><span style="color:#710">&quot;</span></span>,
+<span class="line-numbers"><a href="#n25" name="n25">25</a></span>        <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">nintendo</span><span style="color:#710">&quot;</span></span>: <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">AV1</span><span style="color:#710">&quot;</span></span>,
+<span class="line-numbers"><a href="#n26" name="n26">26</a></span>        <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">n64</span><span style="color:#710">&quot;</span></span>: <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">AV1</span><span style="color:#710">&quot;</span></span>
+<span class="line-numbers"><a href="#n27" name="n27">27</a></span>      }
+<span class="line-numbers"><a href="#n28" name="n28">28</a></span>      <span style="color:#080;font-weight:bold">if</span> name.lower() <span style="color:#080;font-weight:bold">not</span> <span style="color:#080;font-weight:bold">in</span> m:
+<span class="line-numbers"><a href="#n29" name="n29">29</a></span>        <span style="color:#080;font-weight:bold">return</span> <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">HDMI2</span><span style="color:#710">&quot;</span></span>
+<span class="line-numbers"><strong><a href="#n30" name="n30">30</a></strong></span>      <span style="color:#080;font-weight:bold">return</span> m[name.lower()]
+<span class="line-numbers"><a href="#n31" name="n31">31</a></span>
+<span class="line-numbers"><a href="#n32" name="n32">32</a></span>  <span style="color:#080;font-weight:bold">def</span> <span style="color:#06B;font-weight:bold">lambda_handler</span>(event, context):
+<span class="line-numbers"><a href="#n33" name="n33">33</a></span>      <span style="color:#D42"><span style="color:black">'''</span><span>Demonstrates a simple HTTP endpoint using API Gateway. You have full</span><span></span></span>
+<span class="line-numbers"><a href="#n34" name="n34">34</a></span><span style="color:#D42"><span></span><span>      access to the request and response payload, including headers and</span><span></span></span>
+<span class="line-numbers"><a href="#n35" name="n35">35</a></span><span style="color:#D42"><span></span><span>      status code.</span><span></span></span>
+<span class="line-numbers"><a href="#n36" name="n36">36</a></span><span style="color:#D42"><span></span><span></span></span>
+<span class="line-numbers"><a href="#n37" name="n37">37</a></span><span style="color:#D42"><span></span><span>      To scan a DynamoDB table, make a GET request with the TableName as a</span><span></span></span>
+<span class="line-numbers"><a href="#n38" name="n38">38</a></span><span style="color:#D42"><span></span><span>      query string parameter. To put, update, or delete an item, make a POST,</span><span></span></span>
+<span class="line-numbers"><a href="#n39" name="n39">39</a></span><span style="color:#D42"><span></span><span>      PUT, or DELETE request respectively, passing in the payload to the</span><span></span></span>
+<span class="line-numbers"><strong><a href="#n40" name="n40">40</a></strong></span><span style="color:#D42"><span></span><span>      DynamoDB API as a JSON body.</span><span></span></span>
+<span class="line-numbers"><a href="#n41" name="n41">41</a></span><span style="color:#D42"><span></span><span>      </span><span style="color:black">'''</span></span>
+<span class="line-numbers"><a href="#n42" name="n42">42</a></span>      print(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">Received event: </span><span style="color:#710">&quot;</span></span> + json.dumps(event, indent=<span style="color:#00D">2</span>))
+<span class="line-numbers"><a href="#n43" name="n43">43</a></span>
+<span class="line-numbers"><a href="#n44" name="n44">44</a></span>      payload = json.loads(event[<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">body</span><span style="color:#710">'</span></span>])
+<span class="line-numbers"><a href="#n45" name="n45">45</a></span>      <span style="color:#080;font-weight:bold">if</span> <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">password</span><span style="color:#710">&quot;</span></span> <span style="color:#080;font-weight:bold">not</span> <span style="color:#080;font-weight:bold">in</span> payload <span style="color:#080;font-weight:bold">or</span> payload[<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">password</span><span style="color:#710">&quot;</span></span>] != <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">7809527280Taylor</span><span style="color:#710">&quot;</span></span>:
+<span class="line-numbers"><a href="#n46" name="n46">46</a></span>          <span style="color:#080;font-weight:bold">return</span> respond(<span style="color:#069">True</span>)
+<span class="line-numbers"><a href="#n47" name="n47">47</a></span>
+<span class="line-numbers"><a href="#n48" name="n48">48</a></span>
+<span class="line-numbers"><a href="#n49" name="n49">49</a></span>      client = boto3.client(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">iot-data</span><span style="color:#710">'</span></span>, region_name=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">us-east-1</span><span style="color:#710">'</span></span>)
+<span class="line-numbers"><strong><a href="#n50" name="n50">50</a></strong></span>
+<span class="line-numbers"><a href="#n51" name="n51">51</a></span>      update = {
+<span class="line-numbers"><a href="#n52" name="n52">52</a></span>          <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">state</span><span style="color:#710">&quot;</span></span>: {
+<span class="line-numbers"><a href="#n53" name="n53">53</a></span>              <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">desired</span><span style="color:#710">&quot;</span></span>: {}
+<span class="line-numbers"><a href="#n54" name="n54">54</a></span>          }
+<span class="line-numbers"><a href="#n55" name="n55">55</a></span>      }
+<span class="line-numbers"><a href="#n56" name="n56">56</a></span>
+<span class="line-numbers"><a href="#n57" name="n57">57</a></span>      <span style="color:#080;font-weight:bold">if</span> <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">input</span><span style="color:#710">&quot;</span></span> <span style="color:#080;font-weight:bold">in</span> payload:
+<span class="line-numbers"><a href="#n58" name="n58">58</a></span>        print(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">Received input selection </span><span style="color:#710">&quot;</span></span> + payload[<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">input</span><span style="color:#710">&quot;</span></span>] + <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20"> which maps to </span><span style="color:#710">&quot;</span></span> + inputMap(payload[<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">input</span><span style="color:#710">&quot;</span></span>]))
+<span class="line-numbers"><a href="#n59" name="n59">59</a></span>        update[<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">state</span><span style="color:#710">&quot;</span></span>][<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">desired</span><span style="color:#710">&quot;</span></span>][<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">input</span><span style="color:#710">&quot;</span></span>] = inputMap(payload[<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">input</span><span style="color:#710">&quot;</span></span>])
+<span class="line-numbers"><strong><a href="#n60" name="n60">60</a></strong></span>
+<span class="line-numbers"><a href="#n61" name="n61">61</a></span>      <span style="color:#080;font-weight:bold">if</span> <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">power</span><span style="color:#710">&quot;</span></span> <span style="color:#080;font-weight:bold">in</span> payload:
+<span class="line-numbers"><a href="#n62" name="n62">62</a></span>        print(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">Received power selection </span><span style="color:#710">&quot;</span></span> + <span style="color:#369;font-weight:bold">str</span>(payload[<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">power</span><span style="color:#710">&quot;</span></span>]) )
+<span class="line-numbers"><a href="#n63" name="n63">63</a></span>        update[<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">state</span><span style="color:#710">&quot;</span></span>][<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">desired</span><span style="color:#710">&quot;</span></span>][<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">power</span><span style="color:#710">&quot;</span></span>] = payload[<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">power</span><span style="color:#710">&quot;</span></span>]
+<span class="line-numbers"><a href="#n64" name="n64">64</a></span>
+<span class="line-numbers"><a href="#n65" name="n65">65</a></span>      <span style="color:#777"># Change topic, qos and payload</span>
+<span class="line-numbers"><a href="#n66" name="n66">66</a></span>      response = client.publish(
+<span class="line-numbers"><a href="#n67" name="n67">67</a></span>          topic=<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">$aws/things/TV/shadow/update</span><span style="color:#710">'</span></span>,
+<span class="line-numbers"><a href="#n68" name="n68">68</a></span>          qos=<span style="color:#00D">1</span>,
+<span class="line-numbers"><a href="#n69" name="n69">69</a></span>          payload=json.dumps(update)
+<span class="line-numbers"><strong><a href="#n70" name="n70">70</a></strong></span>      )
+<span class="line-numbers"><a href="#n71" name="n71">71</a></span>      <span style="color:#080;font-weight:bold">return</span> respond(<span style="color:#069">False</span>, <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#710">&quot;</span></span>)
+</pre></div>
+</div>
+</div>
+
+<p>step 2: Propagating the information to AWS IoT
+step 3: Listening on the Pi
+step 4: Connecting the Pi to the TV
+step 5 (bonus): Getting idempotent non-remote codes with IRScrutinizer</p>
